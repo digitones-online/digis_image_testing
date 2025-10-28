@@ -1,6 +1,7 @@
 use image::{DynamicImage, GenericImage, GenericImageView, Pixel, Rgba};
 use indicatif::{self, ProgressBar};
 use std::io;
+use std::cmp::{max, min};
 
 #[derive(Debug, PartialEq, Eq)]
 struct ParseRgbaError;
@@ -9,8 +10,24 @@ fn main() {
     // Get forground image path
     let fg_path = get_input("Foreground Image:");
 
+    // Open foreground image
+    let img_result = image::open(fg_path.trim());
+    let img;
+    match img_result {
+        Ok(i) => img = i,
+        Err(e) => panic!("Failed to open image {e:?}"),
+    };
+
     // Get background image path
     let bg_path = get_input("Background Image:");
+
+    // Open background image
+    let img2_result = image::open(bg_path.trim());
+    let img2;
+    match img2_result {
+        Ok(i) => img2 = i,
+        Err(e) => panic!("Failed to open image {e:?}"),
+    };
 
     // Get target color
     let target_color = get_input("Target Color:");
@@ -33,22 +50,6 @@ fn main() {
     // Get save path
     let save_path = get_input("Save Path:");
 
-    // Open foreground image
-    let img_result = image::open(fg_path.trim());
-    let img;
-    match img_result {
-        Ok(i) => img = i,
-        Err(e) => panic!("Failed to open image {e:?}"),
-    };
-
-    // Open background image
-    let img2_result = image::open(bg_path.trim());
-    let img2;
-    match img2_result {
-        Ok(i) => img2 = i,
-        Err(e) => panic!("Failed to open image {e:?}"),
-    };
-
     println!("\nWorking...");
 
     let img3 = chroma_key(&img, &img2, target_color, range as u8);
@@ -60,6 +61,7 @@ fn main() {
         Ok(_) => (),
         Err(e) => panic!("Failed to save image {e:?}"),
     };
+    println!("Saved");
 }
 
 // Iterates over pixels, and applies chroma key
@@ -152,4 +154,11 @@ fn rgba_from_str(s: String) -> Result<Rgba<u8>, ParseRgbaError> {
     //println!("{},{},{},{}", r, g, b, a);
 
     Ok(Rgba([r, g, b, a]))
+}
+
+fn pixel_distance(p1: [u32; 2], p2: [u32; 2]) -> u32 {
+    let x1 = max(p1[0], p2[0]) - min(p1[0], p2[0]);
+    let y1 = max(p1[1], p2[1]) - min(p1[1], p2[1]);
+
+    (x1.pow(2) + y1.pow(2)).isqrt()
 }
